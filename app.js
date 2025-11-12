@@ -3,7 +3,6 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-
 const cors = require('cors');
 var fs = require('fs');
 
@@ -13,80 +12,112 @@ var usersRouter = require('./routes/users');
 var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io')(server, {
-  cors:{
+  cors: {
     origin: "http://localhost:4200/",
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   }
-})
+});
 
-var serverPort = 3002
-
+var serverPort = 3002;
 var user_socket_connect_list = [];
 
-// view engine setup
+// ==================== MIDDLEWARE SETUP ====================
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 app.use(logger('dev'));
-app.use(express.json({limit: '100mb'}));
+app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(cors({ origin: "http://localhost:4200" }));
 
+// ==================== STATIC FILES ====================
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/doctor_images', express.static(path.join(__dirname, 'public', 'doctor_images')));
+app.use('/category_images', express.static(path.join(__dirname, 'public', 'category_images')));
+app.use('/shop_images', express.static(path.join(__dirname, 'public', 'shop_images')));
+
+// Debug log
+console.log("📁 Serving doctor images from:", path.join(__dirname, 'public', 'doctor_images'));
+
+// ==================== ROUTES ====================
+
+// ✅ Remove this line (it’s wrong)
+// app.use('/api/admin', require('./routes/admin_doctors'));
+
+const adminAuth = require('./routes/admin_auth');
+app.use('/api/admin', adminAuth);
+
+const shopRoutes = require('./routes/shopRoutes');
+const adminDoctors = require('./routes/admin_doctors');
+const adminShops = require('./routes/admin_shops');
+const adminUsers = require('./routes/admin_users');
+const adminAppointments = require('./routes/admin_appointments');
+const doctorRoutes = require('./routes/doctorRoutes');
+
+// Admin routes
+app.use('/api/admin/doctors', adminDoctors);
+app.use('/api/admin/shops', adminShops);
+app.use('/api/admin/users', adminUsers);
+app.use('/api/admin/appointments', adminAppointments);
+
+// Public routes
+app.use('/api/shop', shopRoutes);
+app.use('/api/doctors', doctorRoutes);
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
-const corsOptions = {
-  origin: "http://localhost:4200",
-};
- 
- app.use(cors(corsOptions));
-
- fs.readdirSync('./controllers').forEach((file) => {
-  if( file.substr(-3) == '.js' ) {
-    route = require('./controllers/' + file);
-    route.controller(app, io, user_socket_connect_list);
+// ==================== CONTROLLER AUTO-LOAD ====================
+fs.readdirSync('./controllers').forEach((file) => {
+  if (file.endsWith('.js')) {
+    const route = require('./controllers/' + file);
+    if (typeof route.controller === 'function') {
+      route.controller(app, io, user_socket_connect_list);
+    }
   }
-})
+});
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
+// ==================== ERROR HANDLING ====================
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
+app.use(function (err, req, res, next) {
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
   res.status(err.status || 500);
   res.render('error');
 });
 
-module.exports = app;
+// ==================== SERVER START ====================
+server.listen(serverPort, () => {
+  console.log('Server Start : ' + serverPort);
+  console.log('✅ Image folders available:');
+  console.log('   → /doctor_images');
+  console.log('   → /category_images');
+  console.log('   → /shop_images');
+  console.log('🌐 Access via: http://192.168.225.243:' + serverPort);
+});
 
-server.listen(serverPort)
-
-console.log('Server Start : ' + serverPort)
-
-Array.prototype.swap = (x,y) => {
+// ==================== UTILITIES ====================
+Array.prototype.swap = function (x, y) {
   var b = this[x];
   this[x] = this[y];
   this[y] = b;
   return this;
-}
+};
 
-Array.prototype.insert = (index, item) => {
-  this.splice(index,0, item);
-}
+Array.prototype.insert = function (index, item) {
+  this.splice(index, 0, item);
+};
 
-Array.prototype.replace_null = (replace = '""') => {
+Array.prototype.replace_null = function (replace = '""') {
   return JSON.parse(JSON.stringify(this).replace(/null/g, replace));
-}
+};
 
-String.prototype.replaceAll = (search, replacement) => {
-  var target = this;
-  return target.replace(new RegExp(search, 'g'), replacement);
-}
+String.prototype.replaceAll = function (search, replacement) {
+  return this.replace(new RegExp(search, 'g'), replacement);
+};
+
+module.exports = app;

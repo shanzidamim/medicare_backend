@@ -1,0 +1,41 @@
+id,full_name,address,timing,contact,division_id,image_url
+1,Care Pharmacy,"Ground Floor, 67/C, Road No. 11, Dhaka 1212",Sat-Fry(07.00am-02.00am),01612-345680,1,shop_images/d1.webp
+2,Lazz Pharma Limited," 1, Uttara Tower, Jashimuddin Ave, Dhaka 1230",Sat-Fry(08.30am-11.30am),01828-546574,1,shop_images/d2.jpeg
+3,Prescription Aid Pharmacy,"Chandiwala Mansion, House 32 Road No. 11, Dhaka 1212",Sat-Fry(08.00am-01.00am),01920-778815,1,shop_images/D3.jpg
+4,Tazrin Pharmacy Ltd.,"64/3, Lake Circus(Ground Floor), Mirpur Rd, Dhaka 1205",Sat-Fry(09.00am-11.00pm), 01738-079272,1,shop_images/D4.webp
+5,Al Madina Pharmacy,"Zahed Plaza, Shop-5/30, Gulshan Ave, Dhaka 1212",Sat-Fry(08.00am-01.00am), 01688-710430,1,shop_images/D5.webp
+6,Popular Pharmacy,"1st Floor, 159 Hazari Lane, Hazari Market, Chattogram 4000",Sat-thus(09:00am-10:00pm), 01676-917995,2,shop_images/C1.jpg
+7,Jonosheba Pharmacy,"39 Momin Rd, Chattogram 4000",Sat-Fry(08.00am-10.00pm),01818-145353,2,shop_images/C2.jpg
+8,Peoples Pharmacy," 126 K.B. Fazlul Kader Rd, Chattogram 4000",Sat-Fry(09.00am-11.00pm),031-658911,2,shop_images/C3.jpeg
+9,B.N. Pharma,"339 No. , K.C Dey Road, Hazari Lane, Chattogram",Sat-Fry(011.00am-01.30am),01818-643160,2,shop_images/C4.webp
+10,My CareBD Pharmacy,"Commissioner goli, Zakir Hossain Rd, Chattogram 4225",Sat-Fry(09.00am-12.30am),01613-602020,2,shop_images/C5.png
+11,"Lazz Pharma Ltd, Rajshahi ","159/A, 9JF2+62C, Rajshahi 6000",Sat-Fry(08.00am-11.45pm), 01791-505252,3,shop_images/RT1.webp
+12,Kansat Pharmacy,"Medical Road, 5 No. Laximpur Girls School Market, Laximpur Minto Chattor Mor, Rajshahi 6000",Sat-Fry(09.00am-12.30am),01713-700242,3,shop_images/RT2.webp
+13,Ria Pharmacy,"9J7M+M55, Rajshahi",Sat-Fry(09.00am-11.00pm),01718-319356,3,shop_images/RT3.png
+14,Care Pharma,"248 Doctor’s Tower, Opposite the gate of Rajshahi Medical College, Sipai Para, Rajshahi 6000",Sat-Fry(09.00am-11.00pm),01711-927256,3,shop_images/RT4.jpq
+15,Rajshahi Royal Hospital Pharmacy,"9HCJ+QCM, Opposite Side of Popular Diagnostic,Sher Shah Road Laxmipur Bazar, Rajpara, 6000",Open 24 hours, 01913-814472,3,shop_images/RT5.webp
+16,Hahnemann Pharmacy,"RH87+W7G, Khulna",Sat-Fry(09.00am-09.00pm),01919-334020,4,shop_images/K1.jpg
+17,AFC Pharmacy,"24 Majid Sarani, Khulna 9100",Open 24 hours,01787-668143,4,shop_images/K2.webp
+18,M/S Boyra Pharmacy,"RGGP+WPP Infront Of Khulna Medical College, M A Bari St, Hospital Main Gate, Khulna 9000",Sat-Fry(06.00am-01.00am),01715-595509,4,shop_images/K3.webp
+19,Narail Pharmacy,"RGGP+VXG, Khan Plaza, Medical College Haspatal Gate Boyra, Khulna 9100",Sat-Fry(06.00am-11.00pm),01917-356844,4,shop_images/K4.webp
+20,M/S Monoara Pharmacy," RGCR+R7H, Al faruk more, Khulna",Open 24 hours, 01987-800584,4,shop_images/K5.webp
+21,Azad Pharmacy science & surgical.,"Nutan Bazar,Shadar Road,Patuakhali, Barisal,",Sat-Fry(07.00am-11.00pm),1781909322,5,shop_images/B1.jpeg
+22,Bishnupriya pharmacy," 69 Sadar Rd, Barishal 8200",Sat-Fry(08.30am-12.00am), 01711-438937,5,shop_images/B2.png
+23,Green life Medicine House,"Minister para road, Barishal 8241",Open 24 hours,01727-227152,5,shop_images/B3.webp
+24,Jannat Pharma,"RO Pilot High School, Subidkhali, Mirzaganj, Barisal Subikhali Local, Barisal",Sat-Fry(09.00am-12.30am), 01722-334405,5,shop_images/B4.png
+25,Faysal Medical Hall,"P94F+424, Katpotti Rd, Barishal",Sat-Fry(09.00am-10.00pm),01711-783068,5,shop_images/B5.webp
+26,The Central pharmacy Ltd,"point, Sylhet 3100",Sat-Fry(07.00am-02.00am), 01302-399437,6,shop_images/S1.jpeg
+27,Orin Pharmacy,"VVX9+XJ4, Sylhet 3100",Sat-Fry(09.00am-12.30am),01715-172664,6,shop_images/S2.webp
+28,City Pharmacy,"Bhai Bhai Mansion, N Bagbari Rd, Sylhet 3100",Sat-Fry(10.00am-11.00pm),01843-292962,6,shop_images/S3.webp
+29,Mitali Pharmacy,"Shibganj Bazar, Tamabil Rd, Sylhet 3200",Open 24 hours,01711-376144,6,shop_images/S4.png
+30,The Popular Pharmacy,"VVXF+Q6G, Nayasarak Rd, Sylhet",Sat-Fry(09.00am-12.30am),01787-504077,6,shop_images/S5.jpeg
+31,Popular Medicine Corner,"Q66P+CP5, Dhaap Road, Rangpur 5400",Sat-Fry(08.00am-10.00pm), 0521-53892,7,shop_images/R1.jpeg
+32,Modern Pharmacy,"P756+QF8, Near Modern Mor, Dhaka Rangpur Highway, Rangpur City Bypass, Rangpur 5400",Sat-Fry(09.00am-12.00am),01716-060328,7,shop_images/R2.webp
+33,Tetulia Panchogor Pharmacy,"Q67J+JVC, JC Bhaban, Moriom Elahi Saroni Road Near Amar Desh Hospital, Rangpur 5400",Sat-Fry(10.00am-11.00pm),01719-770307,7,shop_images/R3.png
+34,Nir Pharmacy,"P7M6+52G Janata Bank Ltd, Near At, Tajhat Road, Rangpur 5402",Sat-Fry(09.00am-10.00pm),01534-842263,7,shop_images/R4.jpg
+35,Mulatol Pharmacy,"Bazar, Amtola Mulatol Rd, Rangpur 5400",Sat-Fry(09.00am-11.00pm),01718-685457,7,shop_images/R5.webp
+36,Islam Pharmacy,"Dhaka-Mymensingh Rd, Mymensingh",Sat-Fry(09.00am-12.30am),01954-272554,8,shop_images/M1.png
+37,Siam Pharmacy,"15 Cantonment Rd, Mymensingh",Open 24 hours,01948-443443,8,shop_images/M2.webp
+38,Medicine Corner,"QC25+CVR, Mymensingh 2200",Sat-Fry(09.00am-10.00pm),01732-587124,8,shop_images/M3.webp
+39,Geetali Pharmacy,"19 Durgabari Rd, Mymensingh 2200",Sat-Fry(09.00am-11.00pm),01724-258722,8,shop_images/M4.webp
+40,Arafat Pharmacy," PCW6+5QR, Baghmara Rd, Mymensingh",Open 24 hours,01716-949384,8,shop_images/M5.webp
