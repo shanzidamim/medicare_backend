@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const shopController = require('../controllers/shopController');
+
+// FIXED IMPORT ⬇⬇⬇
+const shopController = require('../controllers/shop_controller');
 
 const shopFeedback = require('../controllers/shop_feedback_controller');
 
@@ -18,5 +20,7 @@ router.post('/:id/upload', shopController.uploadShopImage);
 
 router.get('/:id/feedback', shopFeedback.listFeedbacks);
 router.post('/:id/feedback', shopFeedback.addFeedback);
+router.get('/:id/profile', shopController.getShopProfileStats);
+
 
 module.exports = router;

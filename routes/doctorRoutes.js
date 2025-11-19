@@ -3,6 +3,8 @@ const router = express.Router();
 const db = require('../helpers/db_helpers');
 const doctorFeedback = require('../controllers/doctor_feedback_controller');
 const doctorProfile = require('../controllers/doctor_profile_controller');
+const doctorController = require("../controllers/doctor_controller");
+
 
 // ✅ 1. Get All Doctors
 router.get('/', (req, res) => {
@@ -87,12 +89,12 @@ router.get('/filter', (req, res) => {
 // ✅ 5. Feedback
 router.get('/:id/feedback', doctorFeedback.listFeedbacks);
 router.post('/:id/feedback', doctorFeedback.addFeedback);
-
 // ✅ 6. Doctor Profile (get/update)
 router.get('/:id', doctorProfile.getDoctorProfile);
 router.post('/update', doctorProfile.updateDoctorProfile);
 
 // ✅ 7. Upload doctor image
 router.post('/:id/upload', doctorProfile.uploadDoctorImage);
+router.get('/:id/stats', doctorFeedback.getDoctorProfileStats);
 
 module.exports = router;

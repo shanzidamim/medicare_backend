@@ -26,8 +26,9 @@ module.exports.controller = (app, io, socket_list) => {
     }
 
     // ---- AUTH: Register (role = 1 user, 2 doctor, 3 shop) ----
+    // ---- AUTH: Register (role = 1 user, 2 doctor, 3 shop) ----
     app.post('/api/auth/register', (req, res) => {
-        const { role, mobile_code, mobile, email, password } = req.body;
+        const { role, mobile_code, mobile, email, password, first_name } = req.body;
 
         if (![1, 2, 3].includes(Number(role)))
             return res.json({ status: false, message: 'Invalid role (use 1=user, 2=doctor, 3=shop)' });
@@ -35,24 +36,38 @@ module.exports.controller = (app, io, socket_list) => {
         if (!mobile_code || !mobile || !password)
             return res.json({ status: false, message: 'mobile_code, mobile, password required' });
 
-        // OPTIONAL: hash password (left plain here for simplicity)
         db.query(
             'SELECT user_id FROM user_detail WHERE mobile_code=? AND mobile=? LIMIT 1',
             [mobile_code, mobile],
-            (e, r) => {
-                if (e) return helper.ThrowHtmlError(e, res);
-                if (r.length) return res.json({ status: false, message: 'Mobile already registered' });
+            (err, existing) => {
+                if (err) return helper.ThrowHtmlError(err, res);
+                if (existing.length)
+                    return res.json({ status: false, message: 'Mobile already registered' });
 
                 const token = helper.createRequestToken();
+
                 db.query(
-                    'INSERT INTO user_detail (mobile_code, mobile, email, password, user_type, auth_token, is_verify, status, created_date) VALUES (?,?,?,?,?, ?, 1, 1, NOW())',
-                    [mobile_code, mobile, email || '', password, role, token],
-                    (e2, r2) => {
+                    `INSERT INTO user_detail 
+         (mobile_code, mobile, email, password, user_type, first_name, auth_token, is_verify, status, created_date)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, NOW())`,
+                    [mobile_code, mobile, email || '', password, role, first_name || '', token],
+                    (e2, result) => {
                         if (e2) return helper.ThrowHtmlError(e2, res);
-                        return res.json({
+
+                        // ✅ Return same structure as login
+                        res.json({
                             status: true,
                             message: 'Registered successfully',
-                            data: { user_id: r2.insertId, auth_token: token, user_type: role }
+                            data: {
+                                id: result.insertId,             // ✅ Flutter expects 'id'
+                                user_id: result.insertId,
+                                user_type: role,
+                                first_name: first_name || '',
+                                email: email || '',
+                                mobile: mobile,
+                                division_name: 'Dhaka',
+                                auth_token: token
+                            }
                         });
                     }
                 );
@@ -62,7 +77,9 @@ module.exports.controller = (app, io, socket_list) => {
 
     // ---- AUTH: Login (mobile + password) ----
     app.post('/api/auth/login', (req, res) => {
+       
         const { mobile_code, mobile, password } = req.body;
+
         if (!mobile_code || !mobile || !password)
             return res.json({ status: false, message: 'mobile_code, mobile, password required' });
 
@@ -74,17 +91,24 @@ module.exports.controller = (app, io, socket_list) => {
                 if (!rows.length) return res.json({ status: false, message: 'Invalid credentials' });
 
                 const user = rows[0];
+
+                // ✅ Generate and update token
                 issueToken(user.user_id, (e2, token) => {
                     if (e2) return helper.ThrowHtmlError(e2, res);
+
+                    // ✅ Consistent response structure for Flutter
                     res.json({
                         status: true,
                         message: 'Login successful',
                         data: {
-                            user_id: user.user_id,
+                            id: user.user_id,                
+                            user_id: user.user_id,          
                             user_type: user.user_type,
-                            auth_token: token,
+                            first_name: user.first_name || '',
+                            email: user.email || '',
                             mobile: user.mobile,
-                            email: user.email
+                            division_name: user.division_name || 'Dhaka',
+                            auth_token: token
                         }
                     });
                 });
@@ -92,21 +116,29 @@ module.exports.controller = (app, io, socket_list) => {
         );
     });
 
-    // ---- AUTH: Me (stay-login check) ----
-    app.get('/api/auth/me', (req, res) => {
-        authGuard(req.headers, res, (user) => {
-            res.json({
-                status: true,
-                data: {
-                    user_id: user.user_id,
-                    user_type: user.user_type,
-                    mobile: user.mobile,
-                    email: user.email,
-                    auth_token: user.auth_token
-                }
-            });
-        });
+
+    
+   app.get('/api/auth/me', (req, res) => {
+  authGuard(req.headers, res, (user) => {
+    console.log("🧠 Authenticated user:", user); // Debug log
+
+    res.json({
+      status: true,
+      message: 'User verified',
+      data: {
+        id: user.user_id,           // ✅ must be here
+        user_id: user.user_id,      // ✅ keep both for Flutter
+        user_type: user.user_type,
+        first_name: user.first_name || '',
+        email: user.email || '',
+        mobile: user.mobile || '',
+        division_name: user.division_name || 'Dhaka',
+        auth_token: user.auth_token
+      }
     });
+  });
+});
+
 
     // ---- AUTH: Logout ----
     app.post('/api/auth/logout', (req, res) => {
@@ -143,8 +175,8 @@ module.exports.controller = (app, io, socket_list) => {
 };
 
 
-   
-    
+
+
 
 
 

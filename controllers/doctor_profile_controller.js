@@ -17,8 +17,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+
 // =====================================================
-// 1️⃣ GET Doctor Profile
+// 1️⃣ GET Doctor Profile (with feedback count only, no fees column)
 // =====================================================
 exports.getDoctorProfile = (req, res) => {
   const { id } = req.params;
@@ -26,17 +27,23 @@ exports.getDoctorProfile = (req, res) => {
     return res.status(400).json({ status: false, message: 'Doctor ID missing' });
 
   const sql = `
-    SELECT id, full_name, contact, degrees, specialty_detail,
-           clinic_or_hospital, address, years_experience, fees,
-           visit_days, visiting_time, image_url
-    FROM doctors
-    WHERE id = ?
+    SELECT 
+      d.id, d.full_name, d.contact, d.degrees, d.specialty_detail,
+      d.clinic_or_hospital, d.address, d.years_experience,
+      d.visit_days, d.visiting_time, d.image_url,
+      COUNT(f.id) AS feedback_count                -- ✅ only count feedbacks
+    FROM doctors d
+    LEFT JOIN doctor_feedbacks f ON d.id = f.doctor_id
+    WHERE d.id = ?
+    GROUP BY d.id
     LIMIT 1
   `;
 
   db.query(sql, [id], (err, rows) => {
-    if (err)
+    if (err) {
+      console.error("SQL Error:", err);
       return res.status(500).json({ status: false, message: 'DB error' });
+    }
     if (rows.length === 0)
       return res.json({ status: false, message: 'Doctor not found' });
 

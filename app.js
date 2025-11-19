@@ -63,12 +63,15 @@ app.use('/api/admin/users', adminUsers);
 app.use('/api/admin/appointments', adminAppointments);
 
 // Public routes
-app.use('/api/shop', shopRoutes);
+app.use('/api/shops', shopRoutes);  
 app.use('/api/doctors', doctorRoutes);
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/api/appointments', require('./routes/appointmentRoutes'));
+
 
 // ==================== CONTROLLER AUTO-LOAD ====================
+
 fs.readdirSync('./controllers').forEach((file) => {
   if (file.endsWith('.js')) {
     const route = require('./controllers/' + file);
@@ -77,7 +80,6 @@ fs.readdirSync('./controllers').forEach((file) => {
     }
   }
 });
-
 // ==================== ERROR HANDLING ====================
 app.use(function (req, res, next) {
   next(createError(404));
@@ -93,11 +95,7 @@ app.use(function (err, req, res, next) {
 // ==================== SERVER START ====================
 server.listen(serverPort, () => {
   console.log('Server Start : ' + serverPort);
-  console.log('✅ Image folders available:');
-  console.log('   → /doctor_images');
-  console.log('   → /category_images');
-  console.log('   → /shop_images');
-  console.log('🌐 Access via: http://192.168.225.243:' + serverPort);
+ 
 });
 
 // ==================== UTILITIES ====================
