@@ -62,14 +62,6 @@ exports.addFeedback = (req, res) => {
   db.query(sql, [doctorId, user_id, message, rating], (err, result) => {
     if (err) return helper.ThrowHtmlError(err, res);
 
-    // ⭐ Update doctor average rating
-    db.query(
-      `UPDATE doctors
-          SET rating = (SELECT AVG(rating) FROM doctor_feedbacks WHERE doctor_id = ?)
-        WHERE id = ?`,
-      [doctorId, doctorId]
-    );
-
     return res.json({
       status: true,
       message: "Feedback added successfully",
@@ -77,3 +69,4 @@ exports.addFeedback = (req, res) => {
     });
   });
 };
+

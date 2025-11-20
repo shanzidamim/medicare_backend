@@ -78,7 +78,7 @@ module.exports.controller = (app, io, socket_list) => {
   // GET doctor feedbacks
   app.get('/api/doctors/:id/feedback', (req, res) => {
     const id = req.params.id;
-    db.query('SELECT * FROM doctor_feedback WHERE doctor_id=?', [id], (err, rows) => {
+    db.query('SELECT * FROM doctor_feedbacks WHERE doctor_id=?', [id], (err, rows) => {
       if (err) return res.status(500).json({ status: false, message: 'DB error' });
       res.json({ status: true, data: rows });
     });
@@ -184,7 +184,7 @@ module.exports.controller = (app, io, socket_list) => {
   });
   app.post('/api/doctors/:id/feedback', (req, res) => {
     const { user_id, message } = req.body;
-    db.query('INSERT INTO doctor_feedback (doctor_id, user_id, message) VALUES (?, ?, ?)',
+    db.query('INSERT INTO doctor_feedbacks (doctor_id, user_id, message) VALUES (?, ?, ?)',
       [req.params.id, user_id, message],
       (err) => {
         if (err) return res.status(500).json({ status: false, message: 'Error saving feedback' });
@@ -233,34 +233,33 @@ module.exports.controller = (app, io, socket_list) => {
   });
   const upload = multer({ storage });
 
-  // ✅ Make sure these exports exist
-  exports.getDoctorProfile = (req, res) => {
-    const { id } = req.params;
-    if (!id) return res.status(400).json({ status: false, message: "Doctor ID missing" });
+ exports.getDoctorProfile = (req, res) => {
+  const id = req.params.id;
 
-    const sql = `
-    SELECT id, full_name, contact, degrees, specialty_detail,
-           clinic_or_hospital, address, years_experience, fees,
-           visit_days, visiting_time
-    FROM doctors
-    WHERE id = ?
-    LIMIT 1
+  const sql = `
+    SELECT d.*,
+           IFNULL(AVG(f.rating), 0) AS rating,
+           COUNT(f.id) AS feedback_count
+    FROM doctors d
+    LEFT JOIN doctor_feedbacks f ON f.doctor_id = d.id
+    WHERE d.id = ?
+    GROUP BY d.id
   `;
 
-    const db = require('../helpers/db_helpers');
-    db.query(sql, [id], (err, result) => {
-      if (err) {
-        console.error("DB Error:", err);
-        return res.status(500).json({ status: false, message: "Database error" });
-      }
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("DB Error:", err);
+      return res.status(500).json({ status: false, message: "Database error" });
+    }
 
-      if (result.length === 0) {
-        return res.json({ status: false, message: "Doctor not found" });
-      }
+    if (result.length === 0) {
+      return res.json({ status: false, message: "Doctor not found" });
+    }
 
-      return res.json({ status: true, data: result[0] });
-    });
-  };
+    return res.json({ status: true, data: result[0] });
+  });
+};
+
 
   // ✅ Second function — update profile
   exports.updateDoctorProfile = (req, res) => {

@@ -26,18 +26,19 @@ exports.getDoctorProfile = (req, res) => {
   if (!id)
     return res.status(400).json({ status: false, message: 'Doctor ID missing' });
 
-  const sql = `
-    SELECT 
-      d.id, d.full_name, d.contact, d.degrees, d.specialty_detail,
-      d.clinic_or_hospital, d.address, d.years_experience,
-      d.visit_days, d.visiting_time, d.image_url,
-      COUNT(f.id) AS feedback_count                -- ✅ only count feedbacks
-    FROM doctors d
-    LEFT JOIN doctor_feedbacks f ON d.id = f.doctor_id
-    WHERE d.id = ?
-    GROUP BY d.id
-    LIMIT 1
-  `;
+ const sql = `
+  SELECT 
+    d.id, d.full_name, d.contact, d.degrees, d.specialty_detail,
+    d.clinic_or_hospital, d.address, d.years_experience,
+    d.visit_days, d.visiting_time, d.image_url,
+    COUNT(f.id) AS feedback_count,
+    IFNULL(AVG(f.rating), 0) AS rating     -- ⭐ ADD THIS LINE
+  FROM doctors d
+  LEFT JOIN doctor_feedbacks f ON d.id = f.doctor_id
+  WHERE d.id = ?
+  GROUP BY d.id
+  LIMIT 1
+`;
 
   db.query(sql, [id], (err, rows) => {
     if (err) {

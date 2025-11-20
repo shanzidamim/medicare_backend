@@ -51,170 +51,122 @@ function checkAccessToken(headerObj, res, onOk, requiredType = '') {
 // ===================================================================
 
 function _getShopById(id, cb) {
-  db.query(
-    `SELECT s.*, d.division_name
-       FROM medical_shops s
-       LEFT JOIN divisions d ON d.id=s.division_id
-      WHERE s.id=? AND s.status!=2
-      LIMIT 1`,
-    [id],
-    (e, r) => {
-      if (e) return cb(e, null);
-      if (!r.length) return cb(null, null);
+  const sql = `
+    SELECT s.*, d.division_name,
+           IFNULL(AVG(f.rating), 0) AS rating,
+           COUNT(f.id) AS feedback_count
+    FROM medical_shops s
+    LEFT JOIN divisions d ON d.id = s.division_id
+    LEFT JOIN shop_feedbacks f ON f.shop_id = s.id
+    WHERE s.id = ?
+    GROUP BY s.id
+  `;
 
-      const host = process.env.PUBLIC_HOST || "http://localhost:3002";
+  db.query(sql, [id], (e, r) => {
+    if (e) return cb(e, null);
+    if (!r.length) return cb(null, null);
 
-      const shop = r[0];
-      shop.image_url =
-        shop.image_url && shop.image_url.trim() !== ""
-          ? shop.image_url
-          : `${host}/shop_images/default_shop.png`;
-
-      shop.rating = shop.rating || 4.0;
-
-      cb(null, shop);
-    }
-  );
+    const shop = r[0];
+    cb(null, shop);
+  });
 }
+
 
 // ===================================================================
 // ---------------------- GET MY SHOP --------------------------------
 // ===================================================================
 
 exports.getMyShop = (req, res) => {
-  checkAccessToken(req.headers, res, (u) => {
+  helper.CheckParameterValid(res, req.headers, ['access_token'], () => {
+
     db.query(
-      `SELECT s.*, d.division_name 
-         FROM medical_shops s
-         LEFT JOIN divisions d ON d.id=s.division_id
-        WHERE s.user_id=? AND s.status!=2 LIMIT 1`,
-      [u.user_id],
-      (e, r) => {
-        if (e) return helper.ThrowHtmlError(e, res);
+      "SELECT * FROM user_detail WHERE auth_token=? LIMIT 1",
+      [req.headers.access_token],
+      (err, rows) => {
+        if (err) return helper.ThrowHtmlError(err, res);
+        if (!rows.length)
+          return res.json({ status: false, message: "Invalid token" });
 
-        if (!r.length)
-          return res.json({ status: true, data: null });
+        const user = rows[0];
 
-        const host = process.env.PUBLIC_HOST || "http://localhost:3002";
-        const shop = r[0];
-
-        shop.image_url =
-          shop.image_url && shop.image_url.trim() !== ""
-            ? shop.image_url
-            : `${host}/shop_images/default_shop.png`;
-
-        shop.rating = shop.rating || 4.0;
-
-        res.json({ status: true, data: shop });
-      }
-    );
-  });
-};
-
-// ===================================================================
-// ---------------------- CREATE / UPDATE SHOP ------------------------
-// ===================================================================
-
-exports.createOrUpdateShop = (req, res) => {
-  checkAccessToken(req.headers, res, (u) => {
-    if (String(u.user_type) !== '3')
-      return res.json({ status: false, message: "Only shop accounts allowed." });
-
-    const b = req.body;
-
-    helper.CheckParameterValid(res, b,
-      ['full_name', 'address', 'timing', 'contact', 'division_id'],
-      () => {
+        // ---> REAL SHOP QUERY <---
         db.query(
-          `SELECT id FROM medical_shops WHERE user_id=? LIMIT 1`,
-          [u.user_id],
-          (e, r) => {
-            if (e) return helper.ThrowHtmlError(e, res);
-
-            const payload = {
-              user_id: u.user_id,
-              full_name: b.full_name,
-              address: b.address,
-              timing: b.timing,
-              contact: b.contact,
-              division_id: b.division_id,
-              status: 1
-            };
-
-            if (r.length) {
-              // UPDATE
-              db.query(
-                `UPDATE medical_shops SET ?, updated_at=NOW() WHERE id=?`,
-                [payload, r[0].id],
-                (e2) => {
-                  if (e2) return helper.ThrowHtmlError(e2, res);
-                  _getShopById(r[0].id, (e3, shop) => {
-                    if (e3) return helper.ThrowHtmlError(e3, res);
-                    res.json({ status: true, message: "Shop updated", data: shop });
-                  });
-                }
-              );
-            } else {
-              // INSERT
-              db.query(
-                `INSERT INTO medical_shops SET ?, created_at=NOW(), updated_at=NOW()`,
-                [payload],
-                (e2, r2) => {
-                  if (e2) return helper.ThrowHtmlError(e2, res);
-                  _getShopById(r2.insertId, (e3, shop) => {
-                    if (e3) return helper.ThrowHtmlError(e3, res);
-                    res.json({ status: true, message: "Shop created", data: shop });
-                  });
-                }
-              );
-            }
-          }
-        );
-      }
-    );
-  });
-};
-
-// ===================================================================
-// ---------------------- UPDATE SHOP --------------------------------
-// ===================================================================
-
-exports.updateShop = (req, res) => {
-  checkAccessToken(req.headers, res, (u) => {
-    const shopId = req.params.id;
-
-    db.query(`SELECT id, user_id FROM medical_shops WHERE id=? LIMIT 1`,
-      [shopId],
-      (e, r) => {
-        if (e) return helper.ThrowHtmlError(e, res);
-        if (!r.length)
-          return res.json({ status: false, message: "Shop not found" });
-
-        if (String(r[0].user_id) !== String(u.user_id))
-          return res.json({ status: false, message: "Not your shop" });
-
-        const allowed = ['full_name', 'address', 'timing', 'contact', 'division_id', 'status'];
-        const data = {};
-
-        allowed.forEach(k => {
-          if (req.body[k] !== undefined) data[k] = req.body[k];
-        });
-
-        db.query(
-          `UPDATE medical_shops SET ?, updated_at=NOW() WHERE id=?`,
-          [data, shopId],
-          (e2) => {
+          `SELECT s.*, 
+                  d.division_name,
+                  IFNULL(AVG(f.rating),0) AS rating,
+                  COUNT(f.id) AS feedback_count
+             FROM medical_shops s
+             LEFT JOIN divisions d ON d.id=s.division_id
+             LEFT JOIN shop_feedbacks f ON f.shop_id=s.id
+            WHERE s.user_id=? AND s.status!=2
+            GROUP BY s.id
+            LIMIT 1`,
+          [user.user_id],
+          (e2, r2) => {
             if (e2) return helper.ThrowHtmlError(e2, res);
-            _getShopById(shopId, (e3, shop) => {
-              if (e3) return helper.ThrowHtmlError(e3, res);
-              res.json({ status: true, message: "Updated", data: shop });
-            });
+
+            if (!r2.length)
+              return res.json({ status: false, message: "Shop not found" });
+
+            res.json({ status: true, data: r2[0] });
           }
         );
       }
     );
+
   });
 };
+
+
+// ==============================================
+//  UPDATE SHOP PROFILE (doctor-style)
+// ==============================================
+exports.updateShop = (req, res) => {
+  const {
+    shop_id,
+    full_name,
+    address,
+    timing,
+    contact,
+    division_id
+  } = req.body;
+
+  if (!shop_id)
+    return res.status(400).json({ status: false, message: "Shop ID missing" });
+
+  const sql = `
+    UPDATE medical_shops SET 
+      full_name = ?, 
+      address = ?, 
+      timing = ?, 
+      contact = ?, 
+      division_id = ?
+    WHERE id = ?
+  `;
+
+  const params = [
+    full_name,
+    address,
+    timing,
+    contact,
+    division_id,
+    shop_id
+  ];
+
+  db.query(sql, params, (err, result) => {
+    if (err) {
+      console.error("DB Error:", err);
+      return res.status(500).json({ status: false, message: "Database update error" });
+    }
+
+    if (result.affectedRows === 0)
+      return res.json({ status: false, message: "Shop not found" });
+
+    return res.json({ status: true, message: "Shop profile updated successfully" });
+  });
+};
+
+
 
 // ===================================================================
 // ---------------------- GET SHOP BY ID ------------------------------
@@ -223,96 +175,103 @@ exports.updateShop = (req, res) => {
 exports.getShopById = (req, res) => {
   const id = req.params.id;
 
-  _getShopById(id, (e, shop) => {
-    if (e) return helper.ThrowHtmlError(e, res);
-    if (!shop)
-      return res.status(404).json({ status: false, message: "Not found" });
+  const sql = `
+    SELECT s.*,
+           IFNULL(AVG(f.rating), 0) AS rating,
+           COUNT(f.id) AS feedback_count
+    FROM medical_shops s
+    LEFT JOIN shop_feedbacks f ON f.shop_id = s.id
+    WHERE s.id = ?
+    GROUP BY s.id
+  `;
 
-    res.json({ status: true, data: shop });
+  db.query(sql, [id], (err, rows) => {
+    if (err) return res.status(500).json({ status: false, message: "DB error" });
+    if (!rows.length) return res.json({ status: false, message: "Shop not found" });
+
+    res.json({ status: true, data: rows[0] });
   });
 };
+
 
 // ===================================================================
 // ---------------------- LIST BY DIVISION (IMPORTANT FIX) ------------
 // ===================================================================
 
 exports.listByDivision = (req, res) => {
-  const division = req.query.division?.trim() || '';
+  const { division_id } = req.query;
 
-  db.query(
-    `SELECT s.*, d.division_name
-       FROM medical_shops s
-       LEFT JOIN divisions d ON d.id = s.division_id
-      WHERE LOWER(d.division_name) LIKE LOWER(?)
-        AND s.status != 2
-      ORDER BY s.full_name ASC`,
-    [`%${division}%`],
-    (err, rows) => {
-      if (err) return helper.ThrowHtmlError(err, res);
+  const sql = `
+    SELECT s.*, 
+           IFNULL(AVG(f.rating), 0) AS rating,
+           COUNT(f.id) AS feedback_count
+    FROM medical_shops s
+    LEFT JOIN shop_feedbacks f ON f.shop_id = s.id
+    WHERE s.status = 1
+      ${division_id ? "AND s.division_id = ?" : ""}
+    GROUP BY s.id
+    ORDER BY s.full_name ASC
+  `;
 
-      const host = process.env.PUBLIC_HOST || "http://localhost:3002";
+  const params = division_id ? [division_id] : [];
 
-      rows.forEach(s => {
-        s.image_url =
-          s.image_url && s.image_url.trim() !== ""
-            ? s.image_url
-            : `${host}/shop_images/default_shop.png`;
-
-        s.rating = s.rating || 4.0;
-      });
-
-      res.json({ status: true, data: rows });
-    }
-  );
+  db.query(sql, params, (err, rows) => {
+    if (err) return res.status(500).json({ status: false, message: "DB error" });
+    res.json({ status: true, data: rows });
+  });
 };
+
+
 
 exports.getShopProfileStats = (req, res) => {
-  const shopId = req.params.id;
+  const id = req.params.id;
 
-  db.query(
-    `SELECT 
-        COUNT(*) AS feedback_count,
-        IFNULL(AVG(rating), 0) AS rating
-     FROM shop_feedbacks
-     WHERE shop_id = ?`,
-    [shopId],
-    (err, rows) => {
-      if (err) return helper.ThrowHtmlError(err, res);
+  const sql = `
+    SELECT s.*,
+           IFNULL(AVG(f.rating), 0) AS rating,
+           COUNT(f.id) AS feedback_count
+    FROM medical_shops s
+    LEFT JOIN shop_feedbacks f ON f.shop_id = s.id
+    WHERE s.id = ?
+    GROUP BY s.id
+  `;
 
-      return res.json({
-        status: true,
-        rating: Number(rows[0].rating.toFixed(1)),
-        feedback_count: rows[0].feedback_count
-      });
-    }
-  );
+  db.query(sql, [id], (err, rows) => {
+    if (err) return res.status(500).json({ status: false, message: "DB error" });
+
+    res.json({ status: true, data: rows[0] });
+  });
 };
+
 
 
 exports.uploadShopImage = [
   upload.single('image'),
+
   (req, res) => {
-    checkAccessToken(req.headers, res, (u) => {
-      const shopId = req.params.id;
+    const id = req.params.id;
 
-      if (!req.file)
-        return res.json({ status: false, message: "No image uploaded" });
+    if (!req.file)
+      return res.json({ status: false, message: "No image uploaded" });
 
-      const host = process.env.PUBLIC_HOST || "http://localhost:3002";
-      const fileUrl = `${host}/shop_images/${req.file.filename}`;
+    const host = process.env.PUBLIC_HOST || "http://localhost:3002";
+    const imageUrl = `${host}/shop_images/${req.file.filename}`;
 
-      db.query(
-        `UPDATE medical_shops SET image_url=?, updated_at=NOW() WHERE id=?`,
-        [fileUrl, shopId],
-        (e2) => {
-          if (e2) return helper.ThrowHtmlError(e2, res);
-          res.json({
-            status: true,
-            message: "Image uploaded",
-            image_url: fileUrl
-          });
+    db.query(
+      `UPDATE medical_shops SET image_url=?, updated_at=NOW() WHERE id=?`,
+      [imageUrl, id],
+      (err) => {
+        if (err) {
+          console.error("DB Error:", err);
+          return res.status(500).json({ status: false, message: "DB error" });
         }
-      );
-    });
+
+        res.json({
+          status: true,
+          message: "Image uploaded",
+          image_url: imageUrl
+        });
+      }
+    );
   }
 ];

@@ -76,46 +76,85 @@ module.exports.controller = (app, io, socket_list) => {
     });
 
     // ---- AUTH: Login (mobile + password) ----
-    app.post('/api/auth/login', (req, res) => {
-       
-        const { mobile_code, mobile, password } = req.body;
+   // ---- AUTH: Login (mobile + password) ----
+app.post('/api/auth/login', (req, res) => {
 
-        if (!mobile_code || !mobile || !password)
-            return res.json({ status: false, message: 'mobile_code, mobile, password required' });
+    const { mobile_code, mobile, password } = req.body;
 
-        db.query(
-            'SELECT * FROM user_detail WHERE mobile_code=? AND mobile=? AND password=? AND status!=2 LIMIT 1',
-            [mobile_code, mobile, password],
-            (e, rows) => {
-                if (e) return helper.ThrowHtmlError(e, res);
-                if (!rows.length) return res.json({ status: false, message: 'Invalid credentials' });
+    if (!mobile_code || !mobile || !password)
+        return res.json({ status: false, message: 'mobile_code, mobile, password required' });
 
-                const user = rows[0];
+    db.query(
+        'SELECT * FROM user_detail WHERE mobile_code=? AND mobile=? AND password=? AND status!=2 LIMIT 1',
+        [mobile_code, mobile, password],
+        (e, rows) => {
+            if (e) return helper.ThrowHtmlError(e, res);
+            if (!rows.length) return res.json({ status: false, message: 'Invalid credentials' });
 
-                // ✅ Generate and update token
-                issueToken(user.user_id, (e2, token) => {
-                    if (e2) return helper.ThrowHtmlError(e2, res);
+            const user = rows[0];
 
-                    // ✅ Consistent response structure for Flutter
-                    res.json({
-                        status: true,
-                        message: 'Login successful',
-                        data: {
-                            id: user.user_id,                
-                            user_id: user.user_id,          
-                            user_type: user.user_type,
-                            first_name: user.first_name || '',
-                            email: user.email || '',
-                            mobile: user.mobile,
-                            division_name: user.division_name || 'Dhaka',
-                            auth_token: token
+            // Generate token
+            issueToken(user.user_id, (e2, token) => {
+                if (e2) return helper.ThrowHtmlError(e2, res);
+
+                // ===========================================
+                // ✅ If user_type = 3 (Shop) → find shop_id
+                // ===========================================
+                if (user.user_type == 3) {
+                    db.query(
+                        `SELECT id FROM medical_shops WHERE user_id=? LIMIT 1`,
+                        [user.user_id],
+                        (err, shopRows) => {
+
+                            let shopId = null;
+
+                            if (!err && shopRows.length) {
+                                shopId = shopRows[0].id;
+                            }
+
+                            return res.json({
+                                status: true,
+                                message: 'Login successful',
+                                data: {
+                                    id: user.user_id,
+                                    user_id: user.user_id,
+                                    user_type: user.user_type,
+                                    shop_id: shopId,     // ⭐ VERY IMPORTANT
+                                    first_name: user.first_name || '',
+                                    email: user.email || '',
+                                    mobile: user.mobile,
+                                    division_name: user.division_name || 'Dhaka',
+                                    auth_token: token
+                                }
+                            });
                         }
-                    });
-                });
-            }
-        );
-    });
+                    );
+                    return;
+                }
 
+                // ===========================================
+                // ✅ Normal user / doctor login response
+                // ===========================================
+                res.json({
+                    status: true,
+                    message: 'Login successful',
+                    data: {
+                        id: user.user_id,
+                        user_id: user.user_id,
+                        user_type: user.user_type,
+                        shop_id: null, // no shop
+                        first_name: user.first_name || '',
+                        email: user.email || '',
+                        mobile: user.mobile,
+                        division_name: user.division_name || 'Dhaka',
+                        auth_token: token
+                    }
+                });
+
+            });
+        }
+    );
+});
 
     
    app.get('/api/auth/me', (req, res) => {

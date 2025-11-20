@@ -66,7 +66,7 @@ app.use('/api/admin/appointments', adminAppointments);
 app.use('/api/shops', shopRoutes);  
 app.use('/api/doctors', doctorRoutes);
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/api/users', usersRouter);
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
 
 
