@@ -1,52 +1,61 @@
+// routes/chatRoutes.js
 const express = require("express");
 const router = express.Router();
 const db = require("../helpers/db_helpers");
 
-
 // --------------------------------------------------
-// Detect viewer type (user / doctor / shop)
+// Common helper – detect type from users.role
 // --------------------------------------------------
-function detectViewerType(userId, callback) {
-  db.query("SELECT id FROM doctors WHERE id=?", [userId], (e1, r1) => {
-    if (r1?.length) return callback("doctor");
-
-    db.query("SELECT id FROM medical_shops WHERE id=?", [userId], (e2, r2) => {
-      if (r2?.length) return callback("shop");
-
-      return callback("user");
-    });
-  });
-}
-
-
-// --------------------------------------------------
-// 1️⃣ SEND TEXT
-// --------------------------------------------------
-router.post("/send", (req, res) => {
-  const {
-    sender_id,
-    receiver_id,
-    sender_type,
-    receiver_type,
-    message,
-    message_type
-  } = req.body;
-
+function getType(userId, cb) {
   db.query(
-    `INSERT INTO messages 
-      (sender_id, receiver_id, sender_type, receiver_type, message, message_type)
-     VALUES (?,?,?,?,?,?)`,
-    [sender_id, receiver_id, sender_type, receiver_type, message, message_type || "text"],
-    (err) => {
-      if (err) {
-        console.log("❌ CHAT SEND ERROR:", err);
-        return res.json({ status: 0, message: "DB error" });
-      }
-      res.json({ status: 1, message: "sent" });
+    "SELECT role FROM users WHERE user_id = ? LIMIT 1",
+    [userId],
+    (err, rows) => {
+      if (err || !rows.length) return cb("user");
+
+      const role = rows[0].role;
+      if (role == 2) return cb("doctor");
+      if (role == 3) return cb("shop");
+      return cb("user");
     }
   );
-});
+}
 
+// --------------------------------------------------
+// 1️⃣ SEND TEXT (same logic as socket send_message)
+// --------------------------------------------------
+router.post("/send", (req, res) => {
+  const { sender_id, receiver_id, message, message_type } = req.body;
+
+  if (!sender_id || !receiver_id || !message) {
+    return res.json({ status: 0, message: "Missing sender/receiver/message" });
+  }
+
+  getType(sender_id, (senderType) => {
+    getType(receiver_id, (receiverType) => {
+      db.query(
+        `INSERT INTO messages
+         (sender_id, receiver_id, sender_type, receiver_type, message, message_type)
+         VALUES (?,?,?,?,?,?)`,
+        [
+          sender_id,
+          receiver_id,
+          senderType,
+          receiverType,
+          message,
+          message_type || "text",
+        ],
+        (err) => {
+          if (err) {
+            console.log("❌ CHAT SEND ERROR:", err);
+            return res.json({ status: 0, message: "DB error" });
+          }
+          res.json({ status: 1, message: "sent" });
+        }
+      );
+    });
+  });
+});
 
 // --------------------------------------------------
 // 2️⃣ LOAD CHAT HISTORY

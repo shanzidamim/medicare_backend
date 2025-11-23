@@ -1,113 +1,162 @@
+// controllers/chat_list_controller.js
 const db = require("../helpers/db_helpers");
 
+// --------------------------------------------------
+// Detect viewer role (1=user, 2=doctor, 3=shop)
+// --------------------------------------------------
+function getViewerType(userId, cb) {
+  db.query(
+    "SELECT role FROM users WHERE user_id = ? LIMIT 1",
+    [userId],
+    (err, rows) => {
+      if (err || !rows.length) return cb("user");
+
+      const role = rows[0].role;
+      if (role == 2) return cb("doctor");
+      if (role == 3) return cb("shop");
+      return cb("user");
+    }
+  );
+}
+
+// --------------------------------------------------
+// GET RECENT CHAT LIST
+// --------------------------------------------------
 exports.getRecentChats = (req, res) => {
   const userId = parseInt(req.params.userId);
 
-  const sql = `
-    SELECT 
-        m1.id AS msg_id,
-        m1.sender_id,
-        m1.receiver_id,
-        m1.sender_type,
-        m1.receiver_type,
-        m1.message,
-        m1.message_type,
-        m1.file_url,
-        m1.created_at,
+  if (!userId) {
+    return res.json({ status: 0, message: "Missing userId" });
+  }
 
-        CASE 
-            WHEN m1.sender_id = ? THEN m1.receiver_id
-            ELSE m1.sender_id
-        END AS partner_id,
+  getViewerType(userId, (viewerType) => {
+    const sql = `
+      SELECT 
+          m1.id AS msg_id,
+          m1.sender_id,
+          m1.receiver_id,
+          m1.sender_type,
+          m1.receiver_type,
+          m1.message,
+          m1.message_type,
+          m1.file_url,
+          m1.created_at,
 
-        CASE 
-            WHEN m1.sender_id = ? THEN m1.receiver_type
-            ELSE m1.sender_type
-        END AS partner_type
+          CASE 
+              WHEN m1.sender_id = ? THEN m1.receiver_id
+              ELSE m1.sender_id
+          END AS partner_id,
 
-    FROM messages m1
-    INNER JOIN (
-        SELECT 
-            LEAST(sender_id, receiver_id) AS a,
-            GREATEST(sender_id, receiver_id) AS b,
-            MAX(id) AS max_id
-        FROM messages
-        GROUP BY a, b
-    ) m2 
-        ON m1.id = m2.max_id
+          CASE 
+              WHEN m1.sender_id = ? THEN m1.receiver_type
+              ELSE m1.sender_type
+          END AS partner_type
 
-    WHERE m1.sender_id = ? OR m1.receiver_id = ?
+      FROM messages m1
+      INNER JOIN (
+          SELECT 
+              LEAST(sender_id, receiver_id) AS a,
+              GREATEST(sender_id, receiver_id) AS b,
+              MAX(id) AS max_id
+          FROM messages
+          GROUP BY a, b
+      ) m2 
+          ON m1.id = m2.max_id
 
-    ORDER BY m1.created_at DESC
-  `;
+      WHERE m1.sender_id = ? OR m1.receiver_id = ?
+      ORDER BY m1.created_at DESC
+    `;
 
-  db.query(sql, [userId, userId, userId, userId], (err, rows) => {
-    if (err) {
-      console.log(" Recent Chats DB Error:", err);
-      return res.json({ status: 0, message: "DB error" });
-    }
-
-    if (rows.length === 0) {
-      return res.json({ status: 1, data: [] });
-    }
-
-    const finalList = [];
-    let pending = rows.length;
-
-    rows.forEach((item) => {
-      const partnerId = item.partner_id;
-      const partnerType = item.partner_type;
-
-      let table = "";
-      let idField = "";
-      let nameField = "";
-      let imageField = "";
-
-      if (partnerType === "doctor") {
-        table = "doctors";
-        idField = "id";
-        nameField = "full_name";
-        imageField = "image_url";
-      } else if (partnerType === "shop") {
-        table = "medical_shops";
-        idField = "id";
-        nameField = "full_name";
-        imageField = "image_url";
-      } else {
-        table = "user_detail";
-        idField = "user_id";
-        nameField = "CONCAT(first_name, ' ', last_name)";
-        imageField = "image";
+    db.query(sql, [userId, userId, userId, userId], (err, rows) => {
+      if (err) {
+        console.log("Recent Chats DB Error:", err);
+        return res.json({ status: 0, message: "DB error" });
       }
 
-      const q = `
-        SELECT ${nameField} AS name, ${imageField} AS image_url
-        FROM ${table}
-        WHERE ${idField} = ?
-        LIMIT 1
-      `;
+      if (!rows.length) {
+        return res.json({ status: 1, data: [] });
+      }
 
-      db.query(q, [partnerId], (err2, info) => {
-        pending--;
+      const finalList = [];
+      let pending = rows.length;
 
-        const name = info?.length ? info[0].name : "Unknown";
-        const img = info?.length ? info[0].image_url : "";
+      rows.forEach((item) => {
+        const partnerId = item.partner_id;
+        let partnerType = item.partner_type;
 
-        finalList.push({
-          msg_id: item.msg_id,
-          partner_id: partnerId,
-          partner_type: partnerType,
-          name,
-          image_url: img,
-          last_message: item.message_type === "text" ? item.message : "[Image]",
-          message_type: item.message_type,
-          file_url: item.file_url,
-          created_at: item.created_at,
-        });
-
-        if (pending === 0) {
-          return res.json({ status: 1, data: finalList });
+        // --------------------------------------------------
+        // FIX: Only doctor/shop viewer forces partner = user
+        // Normal user keeps original partner_type
+        // --------------------------------------------------
+        if (viewerType === "doctor") {
+          partnerType = "user";
+        } else if (viewerType === "shop") {
+          partnerType = "user";
+        } else {
+          partnerType = item.partner_type; // normal user → doctor/shop/user all allowed
         }
+
+        // --------------------------------------------------
+        // Identify correct table & fields
+        // --------------------------------------------------
+        let table = "";
+        let idField = "";
+        let nameField = "";
+        let imageField = "";
+
+        if (partnerType === "doctor") {
+          table = "doctors";
+          idField = "id";
+          nameField = "full_name";
+          imageField = "image_url";
+        } else if (partnerType === "shop") {
+          table = "medical_shops";
+          idField = "id";
+          nameField = "full_name";
+          imageField = "image_url";
+        } else {
+          // USER TABLE
+          table = "user_detail";
+          idField = "user_id";
+          nameField = "CONCAT(first_name, ' ', last_name)";
+          imageField = "image"; // user_detail stores "image"
+        }
+
+        const q = `
+SELECT ${nameField} AS name, ${imageField} AS image_url
+          FROM ${table}
+          WHERE ${idField} = ?
+          LIMIT 1
+        `;
+
+        db.query(q, [partnerId], (err2, info) => {
+          pending--;
+
+          const name = info && info.length ? info[0].name : "Unknown";
+          const img = info && info.length ? info[0].image_url : ""; // FIXED
+
+          finalList.push({
+            msg_id: item.msg_id,
+            partner_id: partnerId,
+            partner_type: partnerType,
+            name,
+            image_url: img,
+            last_message:
+              item.message_type === "text" ? item.message : "[Image]",
+            message_type: item.message_type,
+            file_url: item.file_url,
+            created_at: item.created_at,
+          });
+
+          if (pending === 0) {
+            finalList.sort(
+              (a, b) =>
+                new Date(b.created_at).getTime() -
+                new Date(a.created_at).getTime()
+            );
+            return res.json({ status: 1, data: finalList });
+          }
+        });
       });
     });
   });
