@@ -4,21 +4,36 @@ const db = require("../helpers/db_helpers");
 // --------------------------------------------------
 // Detect viewer role (1=user, 2=doctor, 3=shop)
 // --------------------------------------------------
-function getViewerType(userId, cb) {
-  db.query(
-    "SELECT role FROM users WHERE user_id = ? LIMIT 1",
+function getType(userId, cb) {
+
+  // 1) Check normal users
+  db.query("SELECT user_type FROM user_detail WHERE user_id=? LIMIT 1",
     [userId],
     (err, rows) => {
-      if (err || !rows.length) return cb("user");
+      if (!err && rows.length) {
+        const t = rows[0].user_type;
+        if (t == 2) return cb("doctor");
+        if (t == 3) return cb("shop");
+        return cb("user");
+      }
 
-      const role = rows[0].role;
-      if (role == 2) return cb("doctor");
-      if (role == 3) return cb("shop");
-      return cb("user");
-    }
-  );
+      // 2) Check doctor table
+      db.query("SELECT id FROM doctors WHERE id=? LIMIT 1",
+        [userId],
+        (err2, r2) => {
+          if (!err2 && r2.length) return cb("doctor");
+
+          // 3) Check shop table
+          db.query("SELECT id FROM medical_shops WHERE id=? LIMIT 1",
+            [userId],
+            (err3, r3) => {
+              if (!err3 && r3.length) return cb("shop");
+
+              return cb("user");
+            });
+        });
+    });
 }
-
 // --------------------------------------------------
 // GET RECENT CHAT LIST
 // --------------------------------------------------
@@ -29,7 +44,7 @@ exports.getRecentChats = (req, res) => {
     return res.json({ status: 0, message: "Missing userId" });
   }
 
-  getViewerType(userId, (viewerType) => {
+ getType(userId, (viewerType) => {
     const sql = `
       SELECT 
           m1.id AS msg_id,

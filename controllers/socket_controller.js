@@ -4,35 +4,46 @@ const path = require("path");
 const db = require("../helpers/db_helpers");
 
 module.exports.controller = (app, io, socket_list) => {
+
   // --------------------------------------------------
-  // Detect account type from users.role (1=user,2=doctor,3=shop)
+  // DETECT USER TYPE
   // --------------------------------------------------
   function getType(userId, cb) {
-    db.query(
-      "SELECT role FROM users WHERE user_id = ? LIMIT 1",
+
+    db.query("SELECT user_type FROM user_detail WHERE user_id=? LIMIT 1",
       [userId],
       (err, rows) => {
-        if (err || !rows.length) return cb("user");
+        if (!err && rows.length) {
+          const t = rows[0].user_type;
+          if (t == 2) return cb("doctor");
+          if (t == 3) return cb("shop");
+          return cb("user");
+        }
 
-        const role = rows[0].role;
-        if (role == 2) return cb("doctor");
-        if (role == 3) return cb("shop");
-        return cb("user");
+        db.query("SELECT id FROM doctors WHERE id=? LIMIT 1", [userId], (e2, r2) => {
+          if (!e2 && r2.length) return cb("doctor");
+
+          db.query("SELECT id FROM medical_shops WHERE id=? LIMIT 1", [userId], (e3, r3) => {
+            if (!e3 && r3.length) return cb("shop");
+
+            return cb("user");
+          });
+        });
       }
     );
   }
 
   // --------------------------------------------------
-  // Same room name for both sides
+  // MAKE ROOM NAME
   // --------------------------------------------------
-  function makeRoom(sender, receiver) {
-    const a = parseInt(sender);
-    const b = parseInt(receiver);
+  function makeRoom(a, b) {
+    a = parseInt(a);
+    b = parseInt(b);
     return a < b ? `${a}_${b}` : `${b}_${a}`;
   }
 
   // --------------------------------------------------
-  // SOCKET CONNECT
+  // SOCKET CONNECTION
   // --------------------------------------------------
   io.on("connection", (socket) => {
     console.log("⚡ User connected:", socket.id);
@@ -50,7 +61,7 @@ module.exports.controller = (app, io, socket_list) => {
     });
 
     // --------------------------------------------------
-    // SEND TEXT (sender_type / receiver_type auto detect)
+    // SEND TEXT MESSAGE
     // --------------------------------------------------
     socket.on("send_message", (data) => {
       const { sender_id, receiver_id, message } = data;
@@ -58,18 +69,19 @@ module.exports.controller = (app, io, socket_list) => {
 
       getType(sender_id, (senderType) => {
         getType(receiver_id, (receiverType) => {
-          const room = makeRoom(sender_id, receiver_id);
 
           db.query(
             `INSERT INTO messages
              (sender_id, receiver_id, sender_type, receiver_type, message, message_type)
-             VALUES (?,?,?,?,?,'text')`,
+             VALUES (?, ?, ?, ?, ?, 'text')`,
             [sender_id, receiver_id, senderType, receiverType, message],
             (err, result) => {
               if (err) {
                 console.log("❌ DB Text Msg Error:", err);
                 return;
               }
+
+              const room = makeRoom(sender_id, receiver_id);
 
               const payload = {
                 id: result.insertId,
@@ -90,7 +102,7 @@ module.exports.controller = (app, io, socket_list) => {
     });
 
     // --------------------------------------------------
-    // SEND IMAGE (sender_type / receiver_type auto detect)
+    // SEND IMAGE MESSAGE (FULL FIX)
     // --------------------------------------------------
     socket.on("send_image", (data) => {
       const { sender_id, receiver_id, image_url } = data;
@@ -98,10 +110,11 @@ module.exports.controller = (app, io, socket_list) => {
 
       getType(sender_id, (senderType) => {
         getType(receiver_id, (receiverType) => {
-          const room = makeRoom(sender_id, receiver_id);
 
           const fileName = Date.now() + ".jpg";
-          const savePath = path.join("public/chat/", fileName);
+
+          // ⭐ FIX #4: Correct absolute path
+          const savePath = path.join(__dirname, "../public/chat/", fileName);
 
           try {
             fs.writeFileSync(savePath, Buffer.from(image_url, "base64"));
@@ -113,13 +126,16 @@ module.exports.controller = (app, io, socket_list) => {
           db.query(
             `INSERT INTO messages
              (sender_id, receiver_id, sender_type, receiver_type, message_type, file_url)
-             VALUES (?,?,?,?, 'image', ?)`,
-            [sender_id, receiver_id, senderType, receiverType, "chat/" + fileName],
+             VALUES (?, ?, ?, ?, ?, ?)`,
+        + [sender_id, receiver_id, senderType, receiverType, "image", "/chat/" + fileName],
+
             (err, result) => {
               if (err) {
                 console.log("❌ DB Image Msg Error:", err);
                 return;
               }
+
+              const room = makeRoom(sender_id, receiver_id);
 
               const payload = {
                 id: result.insertId,
@@ -133,11 +149,14 @@ module.exports.controller = (app, io, socket_list) => {
               };
 
               io.to(room).emit("room_message", payload);
-              console.log("🖼️ IMAGE SENT → Room:", room, payload);
+
+              console.log("🖼️ IMAGE SENT:", payload.file_url);
             }
           );
+
         });
       });
     });
+
   });
 };
