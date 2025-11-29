@@ -46,7 +46,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/doctor_images', express.static(path.join(__dirname, 'public', 'doctor_images')));
 app.use('/category_images', express.static(path.join(__dirname, 'public', 'category_images')));
 app.use('/shop_images', express.static(path.join(__dirname, 'public', 'shop_images')));
-+ app.use('/chat', express.static(path.join(__dirname, 'public', 'chat')));
+app.use('/chat', express.static(path.join(__dirname, 'public', 'chat')));
 
 
 console.log("📁 Serving doctor images:", path.join(__dirname, "public/doctor_images"));

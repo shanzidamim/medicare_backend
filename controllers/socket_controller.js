@@ -9,8 +9,8 @@ module.exports.controller = (app, io, socket_list) => {
   // DETECT USER TYPE
   // --------------------------------------------------
   function getType(userId, cb) {
-
-    db.query("SELECT user_type FROM user_detail WHERE user_id=? LIMIT 1",
+    db.query(
+      "SELECT user_type FROM user_detail WHERE user_id=? LIMIT 1",
       [userId],
       (err, rows) => {
         if (!err && rows.length) {
@@ -34,7 +34,7 @@ module.exports.controller = (app, io, socket_list) => {
   }
 
   // --------------------------------------------------
-  // MAKE ROOM NAME
+  // ROOM NAME
   // --------------------------------------------------
   function makeRoom(a, b) {
     a = parseInt(a);
@@ -43,7 +43,7 @@ module.exports.controller = (app, io, socket_list) => {
   }
 
   // --------------------------------------------------
-  // SOCKET CONNECTION
+  // SOCKET IO
   // --------------------------------------------------
   io.on("connection", (socket) => {
     console.log("⚡ User connected:", socket.id);
@@ -97,38 +97,60 @@ module.exports.controller = (app, io, socket_list) => {
               io.to(room).emit("room_message", payload);
             }
           );
+
         });
       });
     });
 
     // --------------------------------------------------
-    // SEND IMAGE MESSAGE (FULL FIX)
+    // SEND IMAGE (ALL TYPES SUPPORTED)
     // --------------------------------------------------
     socket.on("send_image", (data) => {
-      const { sender_id, receiver_id, image_url } = data;
+
+      let sender_id = parseInt(data.sender_id);
+      let receiver_id = parseInt(data.receiver_id);
+      let image_url = data.image_url;
+
       if (!sender_id || !receiver_id || !image_url) return;
 
+      // ⭐ Detect extension
+      let ext = "jpg";
+
+      if (image_url.startsWith("data:image/png")) ext = "png";
+      if (image_url.startsWith("data:image/jpeg")) ext = "jpg";
+      if (image_url.startsWith("data:image/jpg")) ext = "jpg";
+      if (image_url.startsWith("data:image/webp")) ext = "webp";
+      if (image_url.startsWith("data:image/heic")) ext = "heic";
+
+      // ⭐ Remove header
+      image_url = image_url.replace(/^data:image\/\w+;base64,/, "");
+
+      // ⭐ Ensure folder exists
+      const chatFolder = path.join(__dirname, "../public/chat/");
+      if (!fs.existsSync(chatFolder)) {
+        fs.mkdirSync(chatFolder, { recursive: true });
+      }
+
+      // ⭐ Create file
+      const fileName = Date.now() + "." + ext;
+      const savePath = path.join(chatFolder, fileName);
+
+      try {
+        fs.writeFileSync(savePath, Buffer.from(image_url, "base64"));
+      } catch (err) {
+        console.log("❌ Image Save Error:", err);
+        return;
+      }
+
+      // Save in DB
       getType(sender_id, (senderType) => {
         getType(receiver_id, (receiverType) => {
-
-          const fileName = Date.now() + ".jpg";
-
-          // ⭐ FIX #4: Correct absolute path
-          const savePath = path.join(__dirname, "../public/chat/", fileName);
-
-          try {
-            fs.writeFileSync(savePath, Buffer.from(image_url, "base64"));
-          } catch (err) {
-            console.log("❌ Image Save Error:", err);
-            return;
-          }
 
           db.query(
             `INSERT INTO messages
              (sender_id, receiver_id, sender_type, receiver_type, message_type, file_url)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-        + [sender_id, receiver_id, senderType, receiverType, "image", "/chat/" + fileName],
-
+             VALUES (?, ?, ?, ?, 'image', ?)`,
+            [sender_id, receiver_id, senderType, receiverType, "/chat/" + fileName],
             (err, result) => {
               if (err) {
                 console.log("❌ DB Image Msg Error:", err);
@@ -150,7 +172,7 @@ module.exports.controller = (app, io, socket_list) => {
 
               io.to(room).emit("room_message", payload);
 
-              console.log("🖼️ IMAGE SENT:", payload.file_url);
+              console.log("🖼 IMAGE SAVED:", payload.file_url);
             }
           );
 
