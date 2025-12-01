@@ -3,7 +3,6 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 
-// ---------------- Image upload config ----------------
 const uploadPath = path.join(__dirname, '../public/doctor_images');
 if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
 
@@ -18,10 +17,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// ✅ Save only relative image folder (doctor_images/...)
 const IMAGE_BASE_URL = 'doctor_images';
 
-// ---------------- GET all doctors ----------------
 exports.list = (req, res) => {
   const sql = `
     SELECT 
@@ -49,7 +46,6 @@ exports.list = (req, res) => {
   );
 };
 
-// ---------------- GET doctor by ID ----------------
 exports.get = (req, res) => {
   const sql = `
     SELECT 
@@ -77,7 +73,6 @@ exports.get = (req, res) => {
   );
 };
 
-// ---------------- CREATE new doctor ----------------
 exports.create = (req, res) => {
   const b = req.body;
   const insert = (division_id) => {
@@ -113,7 +108,6 @@ exports.create = (req, res) => {
   getDivisionId(b.division_name, (e, id) => (e ? err(e, res) : insert(id)));
 };
 
-// ---------------- UPDATE doctor ----------------
 exports.update = (req, res) => {
   const id = req.params.id;
   const b = req.body;
@@ -156,7 +150,6 @@ exports.update = (req, res) => {
   doUpdate(undefined);
 };
 
-// ---------------- DELETE doctor (soft delete) ----------------
 exports.remove = (req, res) => {
   q(`UPDATE doctors SET status=0 WHERE id=?`, [req.params.id], (e, r) =>
     e
@@ -168,8 +161,7 @@ exports.remove = (req, res) => {
   );
 };
 
-// ---------------- Upload image ----------------
-// ---------------- Upload image ----------------
+
 exports.uploadImage = [
   upload.single('image'),
   (req, res) => {
@@ -183,13 +175,10 @@ exports.uploadImage = [
       });
     }
 
-    // Save only relative path in DB
     const relativePath = `${IMAGE_BASE_URL}/${req.file.filename}`;
 
-    // Create full URL for response (frontend display)
     const fullUrl = `${req.protocol}://${req.get('host')}/${relativePath}`;
 
-    // Log file info for debugging
     console.log('✅ Received file:', {
       original: req.file.originalname,
       stored_as: req.file.filename,
@@ -197,7 +186,6 @@ exports.uploadImage = [
       full_url: fullUrl,
     });
 
-    // Update DB with relative path only
     q(
       `UPDATE doctors SET image_url=?, updated_at=NOW() WHERE id=?`,
       [relativePath, id],
@@ -206,7 +194,7 @@ exports.uploadImage = [
           ? err(e, res)
           : res.json({
               status: true,
-              image_url: fullUrl, // Full URL for front-end use
+              image_url: fullUrl, 
               message: 'Image uploaded successfully',
             })
     );

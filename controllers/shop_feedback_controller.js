@@ -1,9 +1,7 @@
 const db = require('../helpers/db_helpers');
 const helper = require('../helpers/helpers');
 
-// ==============================
-// 📌 GET Shop Feedback List
-// ==============================
+
 exports.listFeedbacks = (req, res) => {
   const shopId = req.params.id;
   if (!shopId)
@@ -41,7 +39,7 @@ exports.addFeedback = (req, res) => {
   db.query(sql, [shopId, user_id, message, rating], (err, result) => {
     if (err) return helper.ThrowHtmlError(err, res);
 
-    // ⭐ Update shop average rating
+    //  Update shop average rating
     db.query(
       `UPDATE shops
           SET rating = (SELECT AVG(rating) FROM shop_feedbacks WHERE shop_id = ?)

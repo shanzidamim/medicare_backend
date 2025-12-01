@@ -103,7 +103,6 @@ module.exports.controller = (app, io, socket_list) => {
       res.json({ status: true, data: result });
     });
   });
-  // GET /api/doctors/filter?division_id=1&category_id=3
   app.get('/api/doctors/filter', (req, res) => {
     const { division_id, category_id } = req.query;
 
@@ -219,11 +218,9 @@ module.exports.controller = (app, io, socket_list) => {
   const path = require('path');
   const fs = require('fs');
 
-  // Create upload folder if missing
   const uploadPath = path.join(__dirname, '../public/doctor_images');
   if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
 
-  // Multer config
   const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadPath),
     filename: (req, file, cb) => {
@@ -261,7 +258,6 @@ module.exports.controller = (app, io, socket_list) => {
 };
 
 
-  // ✅ Second function — update profile
   exports.updateDoctorProfile = (req, res) => {
     const {
       doctor_id, full_name, contact, degrees, specialty_detail,

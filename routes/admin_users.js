@@ -1,4 +1,3 @@
-// routes/admin_users.js
 const r = require('express').Router();
 const c = require('../controllers/admin_users_controller');
 

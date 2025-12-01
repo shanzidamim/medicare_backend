@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 
-// ---------------- Image upload config ----------------
+// ---------------- Image upload ----------------
 const uploadPath = path.join(__dirname, '../public/doctor_images');
 if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
 
@@ -18,9 +18,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
-// =====================================================
-// 1️⃣ GET Doctor Profile (with feedback count only, no fees column)
-// =====================================================
+
 exports.getDoctorProfile = (req, res) => {
   const { id } = req.params;
   if (!id)
@@ -52,9 +50,7 @@ exports.getDoctorProfile = (req, res) => {
   });
 };
 
-// =====================================================
-// 2️⃣ UPDATE Doctor Profile (text info only)
-// =====================================================
+
 exports.updateDoctorProfile = (req, res) => {
   const {
     doctor_id, full_name, contact, degrees, specialty_detail,
@@ -87,9 +83,7 @@ exports.updateDoctorProfile = (req, res) => {
   });
 };
 
-// =====================================================
-// 3️⃣ UPLOAD Doctor Image (Admin or Doctor App)
-// =====================================================
+
 exports.uploadDoctorImage = [
   upload.single('image'),
   (req, res) => {
@@ -98,7 +92,6 @@ exports.uploadDoctorImage = [
       return res.status(400).json({ status: false, message: 'No image uploaded' });
     }
 
-    // ✅ Save only relative path, not full URL
     const relativePath = `doctor_images/${req.file.filename}`;
 
     db.query(

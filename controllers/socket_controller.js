@@ -1,13 +1,10 @@
-// controllers/socket_chat.js
 const fs = require("fs");
 const path = require("path");
 const db = require("../helpers/db_helpers");
 
 module.exports.controller = (app, io, socket_list) => {
 
-  // --------------------------------------------------
-  // DETECT USER TYPE
-  // --------------------------------------------------
+  
   function getType(userId, cb) {
     db.query(
       "SELECT user_type FROM user_detail WHERE user_id=? LIMIT 1",
@@ -33,18 +30,14 @@ module.exports.controller = (app, io, socket_list) => {
     );
   }
 
-  // --------------------------------------------------
-  // ROOM NAME
-  // --------------------------------------------------
+  
   function makeRoom(a, b) {
     a = parseInt(a);
     b = parseInt(b);
     return a < b ? `${a}_${b}` : `${b}_${a}`;
   }
 
-  // --------------------------------------------------
-  // SOCKET IO
-  // --------------------------------------------------
+  
   io.on("connection", (socket) => {
     console.log("⚡ User connected:", socket.id);
 
@@ -77,7 +70,7 @@ module.exports.controller = (app, io, socket_list) => {
             [sender_id, receiver_id, senderType, receiverType, message],
             (err, result) => {
               if (err) {
-                console.log("❌ DB Text Msg Error:", err);
+                console.log(" DB Text Msg Error:", err);
                 return;
               }
 
@@ -102,9 +95,7 @@ module.exports.controller = (app, io, socket_list) => {
       });
     });
 
-    // --------------------------------------------------
-    // SEND IMAGE (ALL TYPES SUPPORTED)
-    // --------------------------------------------------
+    
     socket.on("send_image", (data) => {
 
       let sender_id = parseInt(data.sender_id);
@@ -113,7 +104,6 @@ module.exports.controller = (app, io, socket_list) => {
 
       if (!sender_id || !receiver_id || !image_url) return;
 
-      // ⭐ Detect extension
       let ext = "jpg";
 
       if (image_url.startsWith("data:image/png")) ext = "png";
@@ -122,16 +112,13 @@ module.exports.controller = (app, io, socket_list) => {
       if (image_url.startsWith("data:image/webp")) ext = "webp";
       if (image_url.startsWith("data:image/heic")) ext = "heic";
 
-      // ⭐ Remove header
       image_url = image_url.replace(/^data:image\/\w+;base64,/, "");
 
-      // ⭐ Ensure folder exists
       const chatFolder = path.join(__dirname, "../public/chat/");
       if (!fs.existsSync(chatFolder)) {
         fs.mkdirSync(chatFolder, { recursive: true });
       }
 
-      // ⭐ Create file
       const fileName = Date.now() + "." + ext;
       const savePath = path.join(chatFolder, fileName);
 
@@ -142,7 +129,6 @@ module.exports.controller = (app, io, socket_list) => {
         return;
       }
 
-      // Save in DB
       getType(sender_id, (senderType) => {
         getType(receiver_id, (receiverType) => {
 
@@ -153,7 +139,7 @@ module.exports.controller = (app, io, socket_list) => {
             [sender_id, receiver_id, senderType, receiverType, "/chat/" + fileName],
             (err, result) => {
               if (err) {
-                console.log("❌ DB Image Msg Error:", err);
+                console.log(" DB Image Msg Error:", err);
                 return;
               }
 

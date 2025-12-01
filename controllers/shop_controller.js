@@ -4,9 +4,7 @@ const multer = require('multer');
 const db = require('../helpers/db_helpers');
 const helper = require('../helpers/helpers');
 
-// ===================================================================
-// --------------------- UPLOAD DIRECTORY -----------------------------
-// ===================================================================
+
 
 const UPLOAD_DIR = path.join(__dirname, '../public/shop_images');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -21,9 +19,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ===================================================================
-// ---------------------- TOKEN CHECK --------------------------------
-// ===================================================================
 
 function checkAccessToken(headerObj, res, onOk, requiredType = '') {
   helper.CheckParameterValid(res, headerObj, ['access_token'], () => {
@@ -46,9 +41,7 @@ function checkAccessToken(headerObj, res, onOk, requiredType = '') {
   });
 }
 
-// ===================================================================
-// ---------------------- INTERNAL HELPERS ----------------------------
-// ===================================================================
+
 
 function _getShopById(id, cb) {
   const sql = `
@@ -72,9 +65,7 @@ function _getShopById(id, cb) {
 }
 
 
-// ===================================================================
-// ---------------------- GET MY SHOP --------------------------------
-// ===================================================================
+
 
 exports.getMyShop = (req, res) => {
   helper.CheckParameterValid(res, req.headers, ['access_token'], () => {
@@ -118,9 +109,7 @@ exports.getMyShop = (req, res) => {
 };
 
 
-// ==============================================
-//  UPDATE SHOP PROFILE (doctor-style)
-// ==============================================
+
 exports.updateShop = (req, res) => {
   const {
     shop_id,
@@ -168,9 +157,6 @@ exports.updateShop = (req, res) => {
 
 
 
-// ===================================================================
-// ---------------------- GET SHOP BY ID ------------------------------
-// ===================================================================
 
 exports.getShopById = (req, res) => {
   const id = req.params.id;
@@ -194,9 +180,7 @@ exports.getShopById = (req, res) => {
 };
 
 
-// ===================================================================
-// ---------------------- LIST BY DIVISION (IMPORTANT FIX) ------------
-// ===================================================================
+
 
 exports.listByDivision = (req, res) => {
   const { division_id } = req.query;
@@ -254,8 +238,8 @@ exports.uploadShopImage = [
     if (!req.file)
       return res.json({ status: false, message: "No image uploaded" });
 
-    const host = process.env.PUBLIC_HOST || "http://localhost:3002";
-    const imageUrl = `${host}/shop_images/${req.file.filename}`;
+    // Only relative URL
+    const imageUrl = `/shop_images/${req.file.filename}`;
 
     db.query(
       `UPDATE medical_shops SET image_url=?, updated_at=NOW() WHERE id=?`,

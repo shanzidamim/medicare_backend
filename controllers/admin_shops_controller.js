@@ -3,7 +3,6 @@ const path = require('path');
 const fs = require('fs');
 const { q, err, getDivisionId } = require('./_admin_common');
 
-// -------------------- LIST ALL SHOPS --------------------
 exports.list = (req, res) =>
   q(
     `SELECT s.*, d.division_name
@@ -14,7 +13,6 @@ exports.list = (req, res) =>
       e ? err(e, res) : res.json({ status: true, data: rows })
   );
 
-// -------------------- GET SINGLE SHOP --------------------
 exports.get = (req, res) =>
   q(
     `SELECT s.*, d.division_name
@@ -29,10 +27,8 @@ exports.get = (req, res) =>
         : res.json({ status: true, data: r[0] || null })
   );
 
-// -------------------- CREATE SHOP --------------------
 exports.create = (req, res) => {
   const b = req.body;
-  // b: full_name, address, timing, contact, division_id OR division_name, image_url, status, user_id
 
   const insert = (division_id) => {
     const row = {
@@ -60,10 +56,8 @@ exports.create = (req, res) => {
     );
   };
 
-  // If division_id is provided, use it directly
   if (b.division_id) return insert(b.division_id);
 
-  // Otherwise, resolve division_name -> division_id
   getDivisionId(b.division_name, (e, id) =>
     e ? err(e, res) : insert(id)
   );
@@ -103,7 +97,6 @@ exports.update = (req, res) => {
     );
   };
 
-  // If division_name is sent (but not division_id), resolve it first
   if (b.division_name && !b.division_id) {
     return getDivisionId(b.division_name, (e, id2) =>
       e ? err(e, res) : doUpdate(id2)
@@ -135,7 +128,7 @@ exports.listByDivision = (req, res) => {
 };
 
 
-// -------------------- DELETE SHOP (SOFT DELETE) --------------------
+// -------------------- DELETE SHOP --------------------
 exports.remove = (req, res) =>
   q(
     `UPDATE medical_shops SET status = 0, updated_at = NOW() WHERE id = ?`,

@@ -1,12 +1,9 @@
-// controllers/chat_list_controller.js
 const db = require("../helpers/db_helpers");
 
-// --------------------------------------------------
-// Detect viewer role (1=user, 2=doctor, 3=shop)
-// --------------------------------------------------
+
 function getType(userId, cb) {
 
-  // 1) Check normal users
+ 
   db.query("SELECT user_type FROM user_detail WHERE user_id=? LIMIT 1",
     [userId],
     (err, rows) => {
@@ -17,13 +14,11 @@ function getType(userId, cb) {
         return cb("user");
       }
 
-      // 2) Check doctor table
       db.query("SELECT id FROM doctors WHERE id=? LIMIT 1",
         [userId],
         (err2, r2) => {
           if (!err2 && r2.length) return cb("doctor");
 
-          // 3) Check shop table
           db.query("SELECT id FROM medical_shops WHERE id=? LIMIT 1",
             [userId],
             (err3, r3) => {
@@ -34,9 +29,7 @@ function getType(userId, cb) {
         });
     });
 }
-// --------------------------------------------------
-// GET RECENT CHAT LIST
-// --------------------------------------------------
+
 exports.getRecentChats = (req, res) => {
   const userId = parseInt(req.params.userId);
 
@@ -99,21 +92,16 @@ exports.getRecentChats = (req, res) => {
         const partnerId = item.partner_id;
         let partnerType = item.partner_type;
 
-        // --------------------------------------------------
-        // FIX: Only doctor/shop viewer forces partner = user
-        // Normal user keeps original partner_type
-        // --------------------------------------------------
+       
         if (viewerType === "doctor") {
           partnerType = "user";
         } else if (viewerType === "shop") {
           partnerType = "user";
         } else {
-          partnerType = item.partner_type; // normal user → doctor/shop/user all allowed
+          partnerType = item.partner_type; 
         }
 
-        // --------------------------------------------------
-        // Identify correct table & fields
-        // --------------------------------------------------
+       
         let table = "";
         let idField = "";
         let nameField = "";
@@ -130,11 +118,10 @@ exports.getRecentChats = (req, res) => {
           nameField = "full_name";
           imageField = "image_url";
         } else {
-          // USER TABLE
           table = "user_detail";
           idField = "user_id";
           nameField = "CONCAT(first_name, ' ', last_name)";
-          imageField = "image"; // user_detail stores "image"
+          imageField = "image"; 
         }
 
         const q = `
@@ -148,7 +135,7 @@ SELECT ${nameField} AS name, ${imageField} AS image_url
           pending--;
 
           const name = info && info.length ? info[0].name : "Unknown";
-          const img = info && info.length ? info[0].image_url : ""; // FIXED
+          const img = info && info.length ? info[0].image_url : ""; 
 
           finalList.push({
             msg_id: item.msg_id,

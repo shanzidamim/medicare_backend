@@ -1,4 +1,3 @@
-// controllers/admin_auth_controller.js
 const db = require('../helpers/db_helpers');
 const helper = require('../helpers/helpers');
 

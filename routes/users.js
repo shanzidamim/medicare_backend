@@ -1,15 +1,13 @@
 var express = require('express');
 var router = express.Router();
-const db = require('../helpers/db_helpers');   // ✅ FIX ADDED
+const db = require('../helpers/db_helpers');   
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
   res.send('respond with a resource');
 });
 
-// ----------------------------------------------------
-// GET USER PROFILE (for Account Settings screen)
-// ----------------------------------------------------
+
 router.get('/:id', (req, res) => {
   const id = req.params.id;
 
@@ -25,9 +23,7 @@ router.get('/:id', (req, res) => {
   );
 });
 
-// ----------------------------------------------------
-// UPDATE USER PROFILE
-// ----------------------------------------------------
+
 router.put('/:id', (req, res) => {
   const id = req.params.id;
   const { first_name, email, mobile, password } = req.body;

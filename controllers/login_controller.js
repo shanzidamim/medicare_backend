@@ -25,8 +25,7 @@ module.exports.controller = (app, io, socket_list) => {
         });
     }
 
-    // ---- AUTH: Register (role = 1 user, 2 doctor, 3 shop) ----
-    // ---- AUTH: Register (role = 1 user, 2 doctor, 3 shop) ----
+   
     app.post('/api/auth/register', (req, res) => {
         const { role, mobile_code, mobile, email, password, first_name } = req.body;
 
@@ -54,12 +53,11 @@ module.exports.controller = (app, io, socket_list) => {
                     (e2, result) => {
                         if (e2) return helper.ThrowHtmlError(e2, res);
 
-                        // ✅ Return same structure as login
                         res.json({
                             status: true,
                             message: 'Registered successfully',
                             data: {
-                                id: result.insertId,             // ✅ Flutter expects 'id'
+                                id: result.insertId,            
                                 user_id: result.insertId,
                                 user_type: role,
                                 first_name: first_name || '',
@@ -75,8 +73,7 @@ module.exports.controller = (app, io, socket_list) => {
         );
     });
 
-    // ---- AUTH: Login (mobile + password) ----
-   // ---- AUTH: Login (mobile + password) ----
+    
 app.post('/api/auth/login', (req, res) => {
 
     const { mobile_code, mobile, password } = req.body;
@@ -97,9 +94,7 @@ app.post('/api/auth/login', (req, res) => {
             issueToken(user.user_id, (e2, token) => {
                 if (e2) return helper.ThrowHtmlError(e2, res);
 
-                // ===========================================
-                // ✅ If user_type = 3 (Shop) → find shop_id
-                // ===========================================
+                
                 if (user.user_type == 3) {
                     db.query(
                         `SELECT id FROM medical_shops WHERE user_id=? LIMIT 1`,
@@ -119,7 +114,7 @@ app.post('/api/auth/login', (req, res) => {
                                     id: user.user_id,
                                     user_id: user.user_id,
                                     user_type: user.user_type,
-                                    shop_id: shopId,     // ⭐ VERY IMPORTANT
+                                    shop_id: shopId,    
                                     first_name: user.first_name || '',
                                     email: user.email || '',
                                     mobile: user.mobile,
@@ -132,9 +127,6 @@ app.post('/api/auth/login', (req, res) => {
                     return;
                 }
 
-                // ===========================================
-                // ✅ Normal user / doctor login response
-                // ===========================================
                 res.json({
                     status: true,
                     message: 'Login successful',
@@ -142,7 +134,7 @@ app.post('/api/auth/login', (req, res) => {
                         id: user.user_id,
                         user_id: user.user_id,
                         user_type: user.user_type,
-                        shop_id: null, // no shop
+                        shop_id: null, 
                         first_name: user.first_name || '',
                         email: user.email || '',
                         mobile: user.mobile,
@@ -159,14 +151,14 @@ app.post('/api/auth/login', (req, res) => {
     
    app.get('/api/auth/me', (req, res) => {
   authGuard(req.headers, res, (user) => {
-    console.log("🧠 Authenticated user:", user); // Debug log
+    console.log("🧠 Authenticated user:", user); 
 
     res.json({
       status: true,
       message: 'User verified',
       data: {
-        id: user.user_id,           // ✅ must be here
-        user_id: user.user_id,      // ✅ keep both for Flutter
+        id: user.user_id,           
+        user_id: user.user_id,      
         user_type: user.user_type,
         first_name: user.first_name || '',
         email: user.email || '',

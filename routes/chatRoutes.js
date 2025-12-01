@@ -1,4 +1,3 @@
-// routes/chatRoutes.js
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -6,9 +5,7 @@ const path = require("path");
 const router = express.Router();
 const db = require("../helpers/db_helpers");
 
-// --------------------------------------------------
-// Detect type
-// --------------------------------------------------
+
 function getType(userId, cb) {
   db.query(
     "SELECT user_type FROM user_detail WHERE user_id=? LIMIT 1",
@@ -34,9 +31,7 @@ function getType(userId, cb) {
   );
 }
 
-// --------------------------------------------------
-// SEND MESSAGE (TEXT + IMAGE)
-// --------------------------------------------------
+
 router.post("/send", (req, res) => {
   const { sender_id, receiver_id, message, image_url, message_type } = req.body;
 
@@ -44,7 +39,6 @@ router.post("/send", (req, res) => {
     return res.json({ status: 0, message: "Missing sender/receiver" });
   }
 
-  // =================== TEXT ===================
   if (message_type === "text") {
     if (!message || message.trim() === "") {
       return res.json({ status: 0, message: "Missing message" });
@@ -68,7 +62,6 @@ router.post("/send", (req, res) => {
     return;
   }
 
-  // =================== IMAGE (ALL TYPES SUPPORTED) ===================
   if (message_type === "image") {
     if (!image_url) return res.json({ status: 0, message: "Missing image" });
 
@@ -81,7 +74,6 @@ router.post("/send", (req, res) => {
       fs.mkdirSync(chatFolder, { recursive: true });
     }
 
-    // ================= Detect extension =================
     let ext = "jpg";
 
     if (image_url.startsWith("data:image/png")) ext = "png";
@@ -100,7 +92,7 @@ router.post("/send", (req, res) => {
     try {
       fs.writeFileSync(savePath, Buffer.from(base64Data, "base64"));
     } catch (err) {
-      console.log("❌ Image Save Error:", err);
+      console.log(" Image Save Error:", err);
       return res.json({ status: 0, message: "Image save error" });
     }
 
@@ -129,9 +121,7 @@ router.post("/send", (req, res) => {
   }
 });
 
-// --------------------------------------------------
-// LOAD CHAT HISTORY
-// --------------------------------------------------
+
 router.post("/load_messages", (req, res) => {
   const { user_id, other_id } = req.body;
 
@@ -148,7 +138,7 @@ router.post("/load_messages", (req, res) => {
     [user_id, other_id, other_id, user_id],
     (err, rows) => {
       if (err) {
-        console.log("❌ LOAD MESSAGE ERROR:", err);
+        console.log(" LOAD MESSAGE ERROR:", err);
         return res.json({ status: 0, message: "DB error" });
       }
 

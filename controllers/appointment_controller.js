@@ -1,4 +1,3 @@
-// controllers/appointment_controller.js
 const db = require('../helpers/db_helpers');
 
 // BOOK APPOINTMENT
@@ -46,7 +45,7 @@ exports.getUserAppointments = (req, res) => {
     (err, rows) => {
       if (err) return res.status(500).json({ status: false, error: err });
 
-      res.json(rows); // simple list for Flutter
+      res.json(rows); 
     }
   );
 };

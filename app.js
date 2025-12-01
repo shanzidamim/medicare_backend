@@ -11,9 +11,7 @@ var usersRouter = require('./routes/users');
 
 var app = express();
 
-// =========================================
-//  FIXED: Only ONE server + ONE socket.io
-// =========================================
+
 const server = require('http').createServer(app);
 const io = require('socket.io')(server, {
   cors: {
@@ -27,9 +25,8 @@ global.userSockets = {};
 
 const serverPort = 3002;
 
-// =========================================
-// MIDDLEWARE
-// =========================================
+
+
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
@@ -39,9 +36,7 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use(cookieParser());
 app.use(cors({ origin: "*" }));
 
-// =========================================
-// STATIC FILES
-// =========================================
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/doctor_images', express.static(path.join(__dirname, 'public', 'doctor_images')));
 app.use('/category_images', express.static(path.join(__dirname, 'public', 'category_images')));
@@ -51,9 +46,7 @@ app.use('/chat', express.static(path.join(__dirname, 'public', 'chat')));
 
 console.log("📁 Serving doctor images:", path.join(__dirname, "public/doctor_images"));
 
-// =========================================
-// ROUTES
-// =========================================
+
 const adminAuth = require('./routes/admin_auth');
 const shopRoutes = require('./routes/shopRoutes');
 const adminDoctors = require('./routes/admin_doctors');
@@ -61,8 +54,11 @@ const adminShops = require('./routes/admin_shops');
 const adminUsers = require('./routes/admin_users');
 const adminAppointments = require('./routes/admin_appointments');
 const doctorRoutes = require('./routes/doctorRoutes');
+const medicineReminderRoutes = require("./routes/medicineReminderRoutes");
+
 
 app.use("/api/admin", adminAuth);
+app.use('/api/reminders', medicineReminderRoutes);
 
 app.use('/api/admin/doctors', adminDoctors);
 app.use('/api/admin/shops', adminShops);
@@ -81,9 +77,7 @@ app.use('/api/appointments', require('./routes/appointmentRoutes'));
 
 app.use('/', indexRouter);
 
-// =========================================
-// SOCKET CONTROLLERS AUTO-LOAD
-// =========================================
+
 fs.readdirSync('./controllers').forEach((file) => {
   if (file.endsWith('.js')) {
     const route = require('./controllers/' + file);
@@ -93,9 +87,7 @@ fs.readdirSync('./controllers').forEach((file) => {
   }
 });
 
-// =========================================
-// ERROR HANDLER
-// =========================================
+
 app.use(function (req, res, next) {
   next(createError(404));
 });
@@ -107,9 +99,7 @@ app.use(function (err, req, res, next) {
   res.render('error');
 });
 
-// =========================================
-// START SERVER
-// =========================================
+
 server.listen(serverPort, () => {
   console.log("🚀 Server running on port:", serverPort);
 });

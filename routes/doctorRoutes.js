@@ -7,7 +7,6 @@ const doctorController = require("../controllers/doctor_controller");
 
 
 
-// ✅ 1. Get All Doctors (with rating + feedback_count)
 router.get('/', (req, res) => {
   const sql = `
     SELECT d.*, 
@@ -33,7 +32,6 @@ router.get('/', (req, res) => {
   });
 });
 
-// ✅ 2. Filter by Category
 router.get('/category/:id', (req, res) => {
   const sql = `
     SELECT d.*, dc.category_name, divs.division_name,
@@ -54,7 +52,6 @@ router.get('/category/:id', (req, res) => {
 });
 
 
-// ✅ 3. Filter by Division
 router.get('/division/:id', (req, res) => {
   const sql = `
     SELECT d.*, dc.category_name, divs.division_name,
@@ -75,7 +72,6 @@ router.get('/division/:id', (req, res) => {
 });
 
 
-// ✅ 4. Filter by Division + Category
 router.get('/filter', (req, res) => {
   const { division_id, category_id } = req.query;
 
@@ -100,14 +96,11 @@ router.get('/filter', (req, res) => {
   });
 });
 
-// ✅ 5. Feedback
 router.get('/:id/feedback', doctorFeedback.listFeedbacks);
 router.post('/:id/feedback', doctorFeedback.addFeedback);
-// ✅ 6. Doctor Profile (get/update)
 router.get('/:id', doctorProfile.getDoctorProfile);
 router.post('/update', doctorProfile.updateDoctorProfile);
 
-// ✅ 7. Upload doctor image
 router.post('/:id/upload', doctorProfile.uploadDoctorImage);
 router.get('/:id/stats', doctorFeedback.getDoctorProfileStats);
 

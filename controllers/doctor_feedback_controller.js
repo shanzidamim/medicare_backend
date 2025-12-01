@@ -1,9 +1,7 @@
 const db = require('../helpers/db_helpers');
 const helper = require('../helpers/helpers');
 
-// ==============================
-// 📌 GET Doctor Feedback List
-// ==============================
+
 exports.listFeedbacks = (req, res) => {
   const doctorId = req.params.id;
   if (!doctorId)
